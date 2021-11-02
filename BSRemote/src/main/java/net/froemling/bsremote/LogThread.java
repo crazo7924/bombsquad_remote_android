@@ -1,31 +1,42 @@
 package net.froemling.bsremote;
 
+import android.content.Context;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.util.Log;
+import android.util.Pair;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.net.HttpURLConnection;
-
-import android.content.Context;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.os.Build;
-import android.util.Log;
-import android.util.Pair;
-
 
 public class LogThread extends Thread {
-  private String _log;
-  private String _version;
   private static boolean _sent = false;
+  private final String _log;
+  private String _version;
 
-  static void log(String s, Throwable e, Context c) {
+  private LogThread(Context c, String s) {
+    super("Error");
+    _log = s;
+    try {
+      if (c == null) {
+        _version = "?";
+      } else {
+        _version = c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName;
+      }
+    } catch (NameNotFoundException ignored) {
+    }
+  }
+
+  public static void log(String s, Throwable e, Context c) {
     // only report the first error..
     if (!_sent) {
       if (e != null) {
@@ -47,22 +58,11 @@ public class LogThread extends Thread {
     }
   }
 
-  private LogThread(Context c, String s) {
-    super("Error");
-    _log = s;
-    try {
-      if (c == null) {
-        _version = "?";
-      } else {
-        _version = c.getPackageManager()
-            .getPackageInfo(c.getPackageName(), 0).versionName;
-      }
-    } catch (NameNotFoundException ignored) {
-    }
+  private static Charset getCharsetUTF8() {
+    return StandardCharsets.UTF_8;
   }
 
-  private String getQuery(List<Pair<String, String>> params)
-      throws UnsupportedEncodingException {
+  private String getQuery(List<Pair<String, String>> params) throws UnsupportedEncodingException {
     StringBuilder result = new StringBuilder();
     boolean first = true;
     for (Pair<String, String> pair : params) {
@@ -81,14 +81,20 @@ public class LogThread extends Thread {
   public void run() {
     try {
 
-      URL url =
-          new URL("http://acrobattleserver.appspot" + ".com" + "/bsRemoteLog");
+      URL url = new URL("http://acrobattleserver.appspot" + ".com" + "/bsRemoteLog");
       HttpURLConnection conn = (HttpURLConnection) url.openConnection();
       conn.setAllowUserInteraction(false);
       conn.setRequestMethod("POST");
-      String userAgent = "BombSquad Remote " + _version + " (Android " +
-          android.os.Build.VERSION.RELEASE + "; " +
-          android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL + ")";
+      String userAgent =
+          "BombSquad Remote "
+              + _version
+              + " (Android "
+              + android.os.Build.VERSION.RELEASE
+              + "; "
+              + android.os.Build.MANUFACTURER
+              + " "
+              + android.os.Build.MODEL
+              + ")";
       conn.setRequestProperty("User-Agent", userAgent);
       conn.setRequestProperty("charset", "utf-8");
 
@@ -104,21 +110,11 @@ public class LogThread extends Thread {
       os.close();
       int responseCode = conn.getResponseCode();
       if (responseCode != 200) {
-        Log.v("BSREMOTE", "Got response code " + responseCode + " on " +
-            "bsRemoteLog request");
+        Log.v("BSREMOTE", "Got response code " + responseCode + " on " + "bsRemoteLog request");
       }
 
     } catch (IOException e) {
       Log.v("BSREMOTE", "ERR ON LogThread post");
     }
   }
-
-  private static Charset getCharsetUTF8() {
-    if (Build.VERSION_CODES.KITKAT <= Build.VERSION.SDK_INT) {
-      return StandardCharsets.UTF_8;
-    } else {
-      return Charset.forName("UTF-8");
-    }
-  }
-
 }
