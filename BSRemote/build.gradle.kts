@@ -37,6 +37,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    lintOptions {
+        disable("MissingTranslation")
+    }
+
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
