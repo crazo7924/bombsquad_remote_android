@@ -37,7 +37,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    lintOptions {
+    lint {
         disable("MissingTranslation")
     }
 
@@ -47,5 +47,5 @@ android {
 }
 
 dependencies {
-    implementation("androidx.annotation:annotation:1.2.0")
+    implementation("androidx.annotation:annotation:1.3.0")
 }
